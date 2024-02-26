@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import com.ganaga.reviews.model.BusinessUnitParserModel
-import com.ganaga.reviews.parser.BusinessUnitAkkaParser.businessUnitsPathFormat
+import com.ganaga.reviews.parser.BusinessUnitParser.businessUnitsPathFormat
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import play.api.libs.json.JsValue
@@ -14,17 +14,21 @@ import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-object BusinessUnitAkkaParser {
+object BusinessUnitParser {
   val businessUnitsPathFormat = "https://www.trustpilot.com/categories/%s?sort=latest_review"
 }
-class BusinessUnitAkkaParser @Inject()(implicit executionContext: ExecutionContext, materializer: Materializer) {
+class BusinessUnitParser @Inject()(implicit executionContext: ExecutionContext, materializer: Materializer) {
 
   val fetchDocumentForCategoryFlow: Flow[String, Document, NotUsed] =
     Flow[String].mapAsync(4)(getDocumentF)
   val parseBusinessUnitsFlow: Flow[Document, List[BusinessUnitParserModel], NotUsed] =
     Flow[Document].mapAsync(4)(parseDocument)
   val parseRecentlyReviewedFlow: Flow[String, BusinessUnitParserModel, NotUsed] =
-    fetchDocumentForCategoryFlow.via(parseBusinessUnitsFlow).mapConcat(identity)
+    Flow[String]
+      .mapAsyncUnordered(4)(getDocumentF)
+      .mapAsyncUnordered(4)(parseDocument)
+      .mapConcat(identity)
+//    fetchDocumentForCategoryFlow.via(parseBusinessUnitsFlow).mapConcat(identity)
 
   def parseDocument(doc: Document): Future[List[BusinessUnitParserModel]] = Future {
     val json = doc.select("#__NEXT_DATA__").first().data()

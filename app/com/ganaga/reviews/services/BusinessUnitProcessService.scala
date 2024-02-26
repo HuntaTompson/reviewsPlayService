@@ -9,7 +9,7 @@ import com.ganaga.reviews.Utils._
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.model.BusinessUnitParserModel
 import com.ganaga.reviews.model.Review
-import com.ganaga.reviews.parser.BusinessUnitAkkaParser
+import com.ganaga.reviews.parser.BusinessUnitParser
 import com.ganaga.reviews.store.BusinessUnitsStore
 import com.ganaga.reviews.store.Categories
 
@@ -21,7 +21,7 @@ object BusinessUnitProcessService {
   val businessUnitsPathFormat = "https://www.trustpilot.com/categories/%s?sort=latest_review"
 }
 
-case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitAkkaParser, reviewService: ReviewService)
+case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitParser, reviewService: ReviewService)
                                                (implicit executionContext: ExecutionContext, materializer: Materializer) {
 
   val parseRecentlyReviewedFlow: Flow[String, BusinessUnitParserModel, NotUsed] = buParser.parseRecentlyReviewedFlow
@@ -33,7 +33,7 @@ case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitAkkaParser
 
   val mergeWithStoredDataSink: Sink[BusinessUnitEntity, Future[Done]] = Sink.foreach[BusinessUnitEntity](mergeWithStoredData)
 
-  def updateRecentlyReviewedF(): Future[Done] = {
+  def updateRecentlyReviewed(): Future[Done] = {
     Categories.categoriesSource
       .via(parseRecentlyReviewedFlow)
       .via(parsedModelToEntityFlow)

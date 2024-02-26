@@ -1,7 +1,7 @@
 package com.ganaga.reviews.parser
 
 import com.ganaga.reviews.model.BusinessUnitEntity
-import com.ganaga.reviews.parser.TrafficAkkaParser._
+import com.ganaga.reviews.parser.TrafficParser._
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
@@ -9,7 +9,7 @@ import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-object TrafficAkkaParser {
+object TrafficParser {
   val trafficUrlFormat = "https://vstat.info/%s"
 
   val COOKIE_VSTAT_NAME = "vstat_session"
@@ -19,7 +19,7 @@ object TrafficAkkaParser {
   val AUTHORITY_HEADER_VALUE = "web.vstat.info"
 }
 
-class TrafficAkkaParser @Inject()(implicit executionContext: ExecutionContext) {
+class TrafficParser @Inject()(implicit executionContext: ExecutionContext) {
 
   def parseBusinessUnitTraffic(buEntity: BusinessUnitEntity): Future[(BusinessUnitEntity, Long)] = {
     getDocument(buEntity.identifyingName)

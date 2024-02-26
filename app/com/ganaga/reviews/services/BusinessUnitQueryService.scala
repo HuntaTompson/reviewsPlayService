@@ -11,10 +11,10 @@ import scala.concurrent.Future
 
 class BusinessUnitQueryService @Inject()(implicit executionContext: ExecutionContext) {
 
-  def topTenUnitsSource(): Future[Source[BusinessUnitEntity, NotUsed]] = {
+  def topTenUnits(): Future[List[BusinessUnitEntity]] = {
     Future {
       BusinessUnitsStore.getAllBusinessUnits().values
         .toList.sortBy(bu => bu.latestReviewCount.getOrElse(0))(Ordering[Int].reverse).take(10)
-    }.map(Source.apply)
+    }
   }
 }

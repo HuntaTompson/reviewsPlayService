@@ -7,6 +7,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.model.DomainData
+import com.ganaga.reviews.store.TrafficStore
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
@@ -14,18 +15,19 @@ import scala.concurrent.Future
 
 class DomainService @Inject()(buQueryService: BusinessUnitQueryService, trafficService: TrafficService)(implicit executionContext: ExecutionContext, materializer: Materializer) {
 
-  val trafficToDomainDataFlow: Flow[(BusinessUnitEntity, Long), DomainData, NotUsed] =
-    Flow[(BusinessUnitEntity, Long)].map{ case (unit, traffic) => mapToDomainData(unit, traffic)}
-
   def topTenDomains(): Future[List[DomainData]] = {
-    val sourceF = buQueryService.topTenUnitsSource()
-    val topDomainDataF =
-      Source.futureSource(sourceF)
-      .via(trafficService.entityTrafficFlow)
-      .via(trafficToDomainDataFlow)
-      .runWith(Sink.collection[DomainData, List[DomainData]])
+    buQueryService.topTenUnits().map { units =>
+      val topTenDomains: List[DomainData] = mapToDomainData(units)
+      val sorted = topTenDomains.sortBy(d => (d.latestReviewCount, d.traffic))(Ordering[(Int, Long)].reverse)
+      sorted
+    }
+  }
 
-    topDomainDataF.map(data => data.sortBy(d => (d.latestReviewCount, d.traffic))(Ordering[(Int, Long)].reverse))
+  private def mapToDomainData(buEntities: List[BusinessUnitEntity]): List[DomainData] = {
+    for {
+      bu <- buEntities
+      traffic = trafficService.getTraffic(bu)
+    } yield mapToDomainData(bu, traffic)
   }
 
   private def mapToDomainData(bu: BusinessUnitEntity, traffic: Long): DomainData = {

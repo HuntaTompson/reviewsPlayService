@@ -18,7 +18,7 @@ class DomainController @Inject()(cc: ControllerComponents, domainService: Domain
 
   def doUpdate = Action {
     mainTask.doUpdate()
-    Ok("Update finished")
+    Ok("update in process")
   }
 
 }
