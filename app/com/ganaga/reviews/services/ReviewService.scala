@@ -9,6 +9,7 @@ import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.WSRequest
 
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
@@ -16,11 +17,11 @@ object ReviewService {
   val reviewUrlFormat = s"https://www.trustpilot.com/api/categoriespages/%s/reviews?locale=en-US"
 }
 
-class ReviewService(wsClient: WSClient)(implicit executionContext: ExecutionContext) {
+class ReviewService @Inject()(wsClient: WSClient)(implicit executionContext: ExecutionContext) {
 
-  def fetchFirstReview(jsonString: String): Review = {
+  private def getFirstReview(reviewsResp: String): Review = {
     import Review._
-    val firstReviewJsValue = (Json.parse(jsonString)\"reviews").as[JsArray].value.head
+    val firstReviewJsValue = (Json.parse(reviewsResp)\"reviews").as[JsArray].value.head
     firstReviewJsValue.as[Review]
   }
 
@@ -36,7 +37,7 @@ class ReviewService(wsClient: WSClient)(implicit executionContext: ExecutionCont
 
   def fetchLatestReview(businessUnitId: String): Future[Review] = {
     wsClient.url(reviewUrlFormat.format(businessUnitId)).get()
-      .map(resp => fetchFirstReview(resp.body))
+      .map(resp => getFirstReview(resp.body))
   }
 
 //  def fetchReviewsFlow(): Flow[String, String, NotUsed] = Flow.fromFunction { businessUnitId =>

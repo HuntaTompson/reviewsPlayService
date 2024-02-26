@@ -20,27 +20,26 @@ object BusinessUnitAkkaParser {
 
 case class BusinessUnitAkkaParser()(implicit executionContext: ExecutionContext, materializer: Materializer) {
 
+  val fetchDocumentForCategoryFlow = Flow[String].mapAsync(4)(getDocumentF)
+  val parseBusinessUnitsFlow = Flow[Document].mapAsync(4)(parseDocument)
   val parseRecentlyReviewedFlow: Flow[String, BusinessUnitParserModel, NotUsed] =
-    Flow[String]
-      .mapAsync(4)(getDocumentF)
-      .mapAsync(4)(parseDocument)
-      .mapConcat(identity)
+    fetchDocumentForCategoryFlow.via(parseBusinessUnitsFlow).mapConcat(identity)
 
-  def parseRecentlyReviewedS(categoriesIds: List[String]): Future[List[BusinessUnitParserModel]] = {
-    Source(categoriesIds)
-      .mapAsyncUnordered(4)(catId => parseRecentlyReviewedF(catId))
-      .runFold(List[BusinessUnitParserModel]())(_ ++ _)
-//    categoriesIds.flatMap(catId => parseRecentlyReviewed(catId))
-  }
+//  def parseRecentlyReviewedS(categoriesIds: List[String]): Future[List[BusinessUnitParserModel]] = {
+//    Source(categoriesIds)
+//      .mapAsyncUnordered(4)(catId => parseRecentlyReviewedF(catId))
+//      .runFold(List[BusinessUnitParserModel]())(_ ++ _)
+////    categoriesIds.flatMap(catId => parseRecentlyReviewed(catId))
+//  }
 
-  def parseRecentlyReviewedF(categoryId: String): Future[List[BusinessUnitParserModel]] = {
-    getDocumentF(categoryId).map { doc =>
-      val json = doc.select("#__NEXT_DATA__").first().data()
-      val jsonValue: JsValue = Json.parse(json)
-      val businessUnits = (jsonValue\\"businesses").toList.head.as[List[BusinessUnitParserModel]]
-      businessUnits
-    }
-  }
+//  def parseRecentlyReviewedF(categoryId: String): Future[List[BusinessUnitParserModel]] = {
+//    getDocumentF(categoryId).map { doc =>
+//      val json = doc.select("#__NEXT_DATA__").first().data()
+//      val jsonValue: JsValue = Json.parse(json)
+//      val businessUnits = (jsonValue\\"businesses").toList.head.as[List[BusinessUnitParserModel]]
+//      businessUnits
+//    }
+//  }
 
   def parseDocument(doc: Document): Future[List[BusinessUnitParserModel]] = Future {
     val json = doc.select("#__NEXT_DATA__").first().data()

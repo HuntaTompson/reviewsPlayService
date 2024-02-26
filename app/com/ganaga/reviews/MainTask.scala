@@ -7,7 +7,6 @@ import com.ganaga.reviews.parser.ReviewParser
 import com.ganaga.reviews.parser.TrafficAkkaParser
 import com.ganaga.reviews.parser.TrafficParser
 import com.ganaga.reviews.services.BusinessUnitService
-import com.ganaga.reviews.services.TrafficService
 import com.ganaga.reviews.services.TrafficServiceAkka
 import com.ganaga.reviews.store.BusinessUnitsStore
 import play.api.libs.ws.WSClient

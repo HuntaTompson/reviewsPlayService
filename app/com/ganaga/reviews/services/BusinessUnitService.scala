@@ -12,6 +12,7 @@ import com.ganaga.reviews.store.BusinessUnitsStore
 import com.ganaga.reviews.store.Categories
 import play.api.libs.ws.WSClient
 
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
@@ -20,7 +21,7 @@ object BusinessUnitService {
   val reviewUrlFormat = s"https://www.trustpilot.com/api/categoriespages/%s/reviews?locale=en-US"
 }
 
-case class BusinessUnitService(wsClient: WSClient, buParser: BusinessUnitParser, reviewParser: ReviewParser)(implicit executionContext: ExecutionContext) {
+case class BusinessUnitService @Inject()(wsClient: WSClient, buParser: BusinessUnitParser, reviewParser: ReviewParser)(implicit executionContext: ExecutionContext) {
 
   def updateRecentlyReviewed(): Future[Unit] = {
     val l1 = System.currentTimeMillis()
