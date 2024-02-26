@@ -13,6 +13,5 @@ object BusinessUnitsStore {
     businessUnits
   }
 
-
   def getAllBusinessUnits(): Map[String, BusinessUnitEntity] = businessUnits
 }

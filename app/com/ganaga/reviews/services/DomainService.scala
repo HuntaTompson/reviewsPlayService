@@ -1,26 +1,40 @@
 package com.ganaga.reviews.services
 
+import akka.NotUsed
+import akka.stream.Materializer
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.model.DomainData
-import com.ganaga.reviews.store.BusinessUnitsStore
-import com.ganaga.reviews.store.TrafficStore
 
-class DomainService() {
+import javax.inject.Inject
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-  def topTenDomains(): List[DomainData] = {
-    val topTenUnits = BusinessUnitsStore.getAllBusinessUnits().values
-      .toList.sortBy(bu => bu.latestReviewCount.getOrElse(0))(Ordering[Int].reverse).take(10)
-    topTenUnits.map(unit => mapToDomainData(unit))
-      .sortBy(d => (d.latestReviewCount, d.traffic))(Ordering[(Int, Long)].reverse)
+class DomainService @Inject()(buQueryService: BusinessUnitQueryService, trafficService: TrafficService)(implicit executionContext: ExecutionContext, materializer: Materializer) {
+
+  val trafficToDomainDataFlow: Flow[(BusinessUnitEntity, Long), DomainData, NotUsed] =
+    Flow[(BusinessUnitEntity, Long)].map{ case (unit, traffic) => mapToDomainData(unit, traffic)}
+
+  def topTenDomains(): Future[List[DomainData]] = {
+    val sourceF = buQueryService.topTenUnitsSource()
+    val topDomainDataF =
+      Source.futureSource(sourceF)
+      .via(trafficService.entityTrafficFlow)
+      .via(trafficToDomainDataFlow)
+      .runWith(Sink.collection[DomainData, List[DomainData]])
+
+    topDomainDataF.map(data => data.sortBy(d => (d.latestReviewCount, d.traffic))(Ordering[(Int, Long)].reverse))
   }
 
-  private def mapToDomainData(bu: BusinessUnitEntity): DomainData = {
+  private def mapToDomainData(bu: BusinessUnitEntity, traffic: Long): DomainData = {
     DomainData(
       bu.identifyingName,
       bu.latestReview,
       bu.latestReviewCount.getOrElse(0),
       bu.totalNumberOfReviews,
-      TrafficStore.getTraffic(bu.identifyingName).getOrElse(0)
+      traffic
     )
   }
 }

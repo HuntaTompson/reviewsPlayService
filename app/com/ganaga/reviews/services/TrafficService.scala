@@ -1,18 +1,17 @@
 package com.ganaga.reviews.services
 
+import akka.NotUsed
+import akka.stream.scaladsl.Flow
 import com.ganaga.reviews.model.BusinessUnitEntity
-import com.ganaga.reviews.parser.TrafficParser
-import com.ganaga.reviews.store.TrafficStore
+import com.ganaga.reviews.parser.TrafficAkkaParser
 
-case class TrafficService(parser: TrafficParser) {
+import javax.inject.Inject
+import scala.concurrent.ExecutionContext
 
-  def updateTrafficForDomains(domains: List[String]) = {
-    val allTraffic = parser.parseTraffic(domains)
-    TrafficStore.newTraffic(allTraffic)
-  }
+case class TrafficService @Inject()(parser: TrafficAkkaParser)(implicit executionContext: ExecutionContext) {
+  // As alternative for fetching traffic on every request we can store it somewhere(memory, DB etc.),
+  // and update it during MainTask.doUpdate() process.
 
-  def updateTrafficForBusinessUnits(bus: List[BusinessUnitEntity]) = {
-    val domains = bus.map(_.identifyingName)
-    updateTrafficForDomains(domains)
-  }
+  val entityTrafficFlow: Flow[BusinessUnitEntity, (BusinessUnitEntity, Long), NotUsed] =
+    Flow[BusinessUnitEntity].mapAsync(4)(parser.parseBusinessUnitTraffic)
 }
