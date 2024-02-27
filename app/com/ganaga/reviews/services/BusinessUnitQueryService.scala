@@ -1,7 +1,5 @@
 package com.ganaga.reviews.services
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.store.BusinessUnitsStore
 

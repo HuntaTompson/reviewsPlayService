@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import com.ganaga.reviews.services.BusinessUnitProcessService
 import com.ganaga.reviews.services.TrafficService
 import play.api.Logger
-import play.api.Logging
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext

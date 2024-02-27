@@ -1,13 +1,8 @@
 package com.ganaga.reviews.services
 
-import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.model.DomainData
-import com.ganaga.reviews.store.TrafficStore
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext

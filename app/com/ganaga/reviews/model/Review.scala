@@ -19,8 +19,8 @@ object Review {
   implicit val reviewWrites: Writes[Review] = (
     (JsPath \ "id").write[String] and
       (JsPath \ "text").write[String] and
-      (JsPath \ "rating").write[Int] and
-      (JsPath \ "date" \ "createdAt").write[LocalDateTime]
+        (JsPath \ "rating").write[Int] and
+          (JsPath \ "createdAt").write[LocalDateTime]
     )(r => (r.reviewId, r.text, r.rating, r.createdAt))
 
 }

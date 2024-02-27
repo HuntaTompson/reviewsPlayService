@@ -3,8 +3,6 @@ package com.ganaga.reviews.parser
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
 import com.ganaga.reviews.model.BusinessUnitParserModel
 import com.ganaga.reviews.parser.BusinessUnitParser.businessUnitsPathFormat
 import org.jsoup.Jsoup
