@@ -11,7 +11,7 @@ import com.ganaga.reviews.model.BusinessUnitParserModel
 import com.ganaga.reviews.model.Review
 import com.ganaga.reviews.parser.BusinessUnitParser
 import com.ganaga.reviews.store.BusinessUnitsStore
-import com.ganaga.reviews.store.Categories
+import com.ganaga.reviews.store.CategoriesStore
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
@@ -28,13 +28,13 @@ case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitParser, re
 
   val parsedModelToEntityFlow: Flow[BusinessUnitParserModel, BusinessUnitEntity, NotUsed] =
     Flow[BusinessUnitParserModel]
-    .mapAsync(4)(bu => parsedModelToEntity(bu))
+    .mapAsyncUnordered(4)(bu => parsedModelToEntity(bu))
     .filter(isReviewDateValid)
 
   val mergeWithStoredDataSink: Sink[BusinessUnitEntity, Future[Done]] = Sink.foreach[BusinessUnitEntity](mergeWithStoredData)
 
   def updateRecentlyReviewed(): Future[Done] = {
-    Categories.categoriesSource
+    CategoriesStore.categoriesSource
       .via(parseRecentlyReviewedFlow)
       .via(parsedModelToEntityFlow)
       .runWith(mergeWithStoredDataSink)

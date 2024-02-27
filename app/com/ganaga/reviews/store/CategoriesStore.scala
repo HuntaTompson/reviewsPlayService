@@ -3,7 +3,7 @@ package com.ganaga.reviews.store
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 
-object Categories {
+object CategoriesStore {
 
   val categoriesNames: List[String] = List("Electronics Store", "Jewelry Store", "Clothing Store", "Computer Store")
 
