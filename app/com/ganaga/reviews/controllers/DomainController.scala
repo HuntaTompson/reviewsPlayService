@@ -16,6 +16,8 @@ class DomainController @Inject()(cc: ControllerComponents, domainService: Domain
     domainService.topTenDomains().map(topTen => Ok(Json.toJson(topTen)))
   }
 
+  /** Data update is automatically triggered every 5 minutes. But you can also start is via this endpoint
+   * */
   def doUpdate = Action {
     mainTask.doUpdate()
     Ok("update in process")
