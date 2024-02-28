@@ -46,8 +46,7 @@ case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitParser, re
   }
 
   private def mergeWithStoredData(buEntity: BusinessUnitEntity): Unit = {
-    val storedData = BusinessUnitsStore.getAllBusinessUnits()
-    storedData.get(buEntity.businessUnitId) match {
+    BusinessUnitsStore.getBusinessUnit(buEntity.businessUnitId) match {
       case Some(stored) if isReviewNotSame(stored, buEntity) =>
         BusinessUnitsStore.saveBusinessUnit(buEntity.copy(latestReviewCount = stored.latestReviewCount.map(_ + 1)))
       case Some(stored) =>

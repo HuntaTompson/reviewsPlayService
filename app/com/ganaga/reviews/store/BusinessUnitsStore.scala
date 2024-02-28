@@ -11,4 +11,6 @@ object BusinessUnitsStore {
   }
 
   def getAllBusinessUnits(): Map[String, BusinessUnitEntity] = businessUnits
+
+  def getBusinessUnit(businessUnitId: String): Option[BusinessUnitEntity] = businessUnits.get(businessUnitId)
 }
