@@ -8,6 +8,7 @@ import akka.stream.scaladsl.Sink
 import com.ganaga.reviews.Utils._
 import com.ganaga.reviews.model.BusinessUnitEntity
 import com.ganaga.reviews.model.BusinessUnitParserModel
+import com.ganaga.reviews.model.BusinessUnitProcessData
 import com.ganaga.reviews.model.Review
 import com.ganaga.reviews.parser.BusinessUnitParser
 import com.ganaga.reviews.store.BusinessUnitsStore
@@ -26,34 +27,51 @@ case class BusinessUnitProcessService @Inject()(buParser: BusinessUnitParser, re
 
   val parseRecentlyReviewedFlow: Flow[String, BusinessUnitParserModel, NotUsed] = buParser.parseRecentlyReviewedFlow
 
-  val parsedModelToEntityFlow: Flow[BusinessUnitParserModel, BusinessUnitEntity, NotUsed] =
+  val parsedModelToDataFlow: Flow[BusinessUnitParserModel, BusinessUnitProcessData, NotUsed] =
     Flow[BusinessUnitParserModel]
-    .mapAsyncUnordered(4)(bu => parsedModelToEntity(bu))
-    .filter(isReviewDateValid)
+      .mapAsyncUnordered(4)(bu => parsedModelToData(bu))
+      .filter(data => data.reviews.exists(isReviewDateValid))
 
-  val mergeWithStoredDataSink: Sink[BusinessUnitEntity, Future[Done]] = Sink.foreach[BusinessUnitEntity](mergeWithStoredData)
+  val mergeWithStoredDataSink: Sink[BusinessUnitProcessData, Future[Done]] = Sink.foreach[BusinessUnitProcessData](mergeWithStoredData)
 
   def updateRecentlyReviewed(): Future[Done] = {
     CategoriesStore.categoriesSource
       .via(parseRecentlyReviewedFlow)
-      .via(parsedModelToEntityFlow)
+      .via(parsedModelToDataFlow)
       .runWith(mergeWithStoredDataSink)
   }
 
-  private def parsedModelToEntity(parseModel: BusinessUnitParserModel): Future[BusinessUnitEntity] = {
-    reviewService.fetchLatestReview(parseModel.businessUnitId)
-      .map(review => toBusinessUnitEntity(parseModel, review))
+  private def parsedModelToData(parseModel: BusinessUnitParserModel): Future[BusinessUnitProcessData] = {
+    reviewService.fetchLatestReviews(parseModel.businessUnitId)
+      .map(reviews => BusinessUnitProcessData(parseModel, reviews))
   }
 
-  private def mergeWithStoredData(buEntity: BusinessUnitEntity): Unit = {
-    BusinessUnitsStore.getBusinessUnit(buEntity.businessUnitId) match {
-      case Some(stored) if isReviewNotSame(stored, buEntity) =>
-        BusinessUnitsStore.saveBusinessUnit(buEntity.copy(latestReviewCount = stored.latestReviewCount.map(_ + 1)))
-      case Some(stored) =>
-        BusinessUnitsStore.saveBusinessUnit(stored.copy(totalNumberOfReviews = buEntity.totalNumberOfReviews))
-      case None =>
-        BusinessUnitsStore.saveBusinessUnit(buEntity.copy(latestReviewCount = Some(1)))
+  private def mergeWithStoredData(data: BusinessUnitProcessData): Unit = {
+    val buModel = data.buModel
+    val stored = BusinessUnitsStore.getBusinessUnit(buModel.businessUnitId)
+    val newReviews = filterNewReviews(stored, data.reviews)
+
+    (stored, newReviews.nonEmpty) match {
+      case (Some(entity), true) =>
+        BusinessUnitsStore.saveBusinessUnit(entity.copy(
+          latestReview = newReviews.head,
+          latestReviewCount = entity.latestReviewCount.map(_ + newReviews.size)))
+      case (Some(entity), false) =>
+        BusinessUnitsStore.saveBusinessUnit(entity.copy(totalNumberOfReviews = buModel.numberOfReviews))
+      case (None, true) =>
+        BusinessUnitsStore.saveBusinessUnit(
+          toBusinessUnitEntity(buModel, newReviews.head)
+            .copy(latestReviewCount = Option(newReviews.size))
+        )
+      case (None, false) =>
+      //just ignore this case
     }
+  }
+
+  def filterNewReviews(buEntity: Option[BusinessUnitEntity], reviews: List[Review]) = {
+    val storedReview = buEntity.map(_.latestReview)
+    val newReviews = reviews.filter(r => isReviewDateValid(r) && storedReview.forall(r.isCreatedAfter))
+    newReviews
   }
 
   private def toBusinessUnitEntity(parserModel: BusinessUnitParserModel, review: Review): BusinessUnitEntity = {

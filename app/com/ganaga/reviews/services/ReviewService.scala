@@ -16,14 +16,8 @@ object ReviewService {
 
 class ReviewService @Inject()(wsClient: WSClient)(implicit executionContext: ExecutionContext) {
 
-  private def getFirstReview(reviewsResp: String): Review = {
-    import Review._
-    val firstReviewJsValue = (Json.parse(reviewsResp)\"reviews").as[JsArray].value.head
-    firstReviewJsValue.as[Review]
-  }
-
-  def fetchLatestReview(businessUnitId: String): Future[Review] = {
+  def fetchLatestReviews(businessUnitId: String): Future[List[Review]] = {
     wsClient.url(reviewUrlFormat.format(businessUnitId)).get()
-      .map(resp => getFirstReview(resp.body))
+      .map(resp => (Json.parse(resp.body)\"reviews").as[List[Review]])
   }
 }

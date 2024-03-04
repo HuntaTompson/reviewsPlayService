@@ -25,4 +25,9 @@ object Review {
 
 }
 
-case class Review(reviewId: String, text: String, rating: Int, createdAt: LocalDateTime)
+case class Review(reviewId: String, text: String, rating: Int, createdAt: LocalDateTime) {
+
+  def isCreatedAfter(review: Review): Boolean = {
+    createdAt.isAfter(review.createdAt)
+  }
+}
